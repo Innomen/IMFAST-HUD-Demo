@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMFAST HUD Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        button {
+            background: #333;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 12px 30px;
+            font-family: inherit;
+            font-size: 1.2em;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        button:hover { background: #0f0; color: #000; }
+        .demo-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .hud-panel {
+            background: #000;
+            border: 2px solid #0f0;
+            padding: 15px;
+        }
+        .hud-title {
+            color: #0f0;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .compact-hud {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .compact-dim {
+            background: #111;
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        .dim-letter {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        .dim-dots {
+            display: flex;
+            justify-content: center;
+            gap: 3px;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #333;
+            border-radius: 50%;
+        }
+        .dot.active { background: currentColor; }
+        .expanded-hud {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .expanded-dim {
+            background: #111;
+            padding: 8px;
+            border: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .dim-info {
+            flex: 1;
+        }
+        .dim-label-full {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .dim-state {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        .dim-bar {
+            width: 100px;
+            height: 20px;
+            background: #222;
+            position: relative;
+            border: 1px solid #444;
+        }
+        .bar-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: currentColor;
+            transition: width 0.5s ease;
+        }
+        .scene-description {
+            background: #000;
+            border: 2px solid #0f0;
+            padding: 20px;
+            text-align: center;
+        }
+        .scene-title {
+            color: #0f0;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .scene-text {
+            line-height: 1.6;
+            font-size: 1em;
+        }
+        .timer {
+            text-align: center;
+            color: #0f0;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        /* Colors for dimensions */
+        .I { color: #ff6b6b; }
+        .M { color: #4ecdc4; }
+        .F { color: #ffe66d; }
+        .A { color: #a8e6cf; }
+        .S { color: #c77dff; }
+        .T { color: #ff9770; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <button onclick="prevFrame()">◀ PREV</button>
+            <button id="playBtn" onclick="togglePlay()">▶ PLAY</button>
+            <button onclick="nextFrame()">NEXT ▶</button>
+        </div>
+        
+        <div class="timer" id="timer">FRAME 1/5 | 0.0s</div>
+        
+        <div class="demo-area">
+            <div class="hud-panel">
+                <div class="hud-title">COMPACT HUD</div>
+                <div class="compact-hud" id="compactHud"></div>
+            </div>
+            
+            <div class="hud-panel">
+                <div class="hud-title">EXPANDED HUD</div>
+                <div class="expanded-hud" id="expandedHud"></div>
+            </div>
+        </div>
+        
+        <div class="scene-description">
+            <div class="scene-title">SCENE</div>
+            <div class="scene-text" id="sceneText">Ready to begin...</div>
+        </div>
+    </div>
+
+    <script>
+        const DIMS = [
+            { id: 'I', name: 'Identity', states: ['Agent', 'Passenger', 'Witness', 'Performer', 'Embodied', 'Fragmented', 'Dissolved'] },
+            { id: 'M', name: 'Mentality', states: ['Silent', 'Verbal', 'Imagistic', 'Conceptual', 'Associative', 'Recursive', 'Intuitive'] },
+            { id: 'F', name: 'Focus', states: ['Diffuse', 'Narrow', 'Divided', 'Scanning', 'Peripheral', 'Captured', 'Oscillating'] },
+            { id: 'A', name: 'Affect', states: ['Elevated', 'Peaceful', 'Neutral', 'Tense', 'Heavy', 'Aversive', 'Complex'] },
+            { id: 'S', name: 'Sensory', states: ['Visual', 'Auditory', 'Tactile', 'Olfactory', 'Gustatory', 'Somatic', 'Synesthetic'] },
+            { id: 'T', name: 'Temporal', states: ['Dilated', 'Compressed', 'Suspended', 'Fragmented', 'Flowing', 'Circular', 'Displaced'] }
+        ];
+
+        const SEQUENCE = [
+            { t: 0, scene: "Walking through park on sunny morning, relaxed stride", state: [4,0,0,1,0,4] },
+            { t: 2, scene: "Notice colorful bird in tree, attention locks on movement", state: [4,0,1,1,0,4] },
+            { t: 4, scene: "Bird reminds you of childhood pet, mind drifts to memories", state: [1,4,2,6,0,6] },
+            { t: 6, scene: "Phone vibrates urgently, hand moves to pocket reflexively", state: [3,1,5,3,2,1] },
+            { t: 8, scene: "Ignore phone, resume walking, body awareness returns", state: [4,0,3,1,5,4] }
+        ];
+
+        let playing = false;
+        let startTime = 0;
+        let animFrame = null;
+        let currentFrame = 0;
+
+        function initHUD() {
+            const compact = document.getElementById('compactHud');
+            const expanded = document.getElementById('expandedHud');
+            
+            compact.innerHTML = DIMS.map(d => `
+                <div class="compact-dim ${d.id}">
+                    <div class="dim-letter">${d.id}</div>
+                    <div class="dim-dots">${Array(7).fill(0).map((_, i) => 
+                        `<div class="dot" data-dim="${d.id}" data-pos="${i}"></div>`
+                    ).join('')}</div>
+                </div>
+            `).join('');
+            
+            expanded.innerHTML = DIMS.map(d => `
+                <div class="expanded-dim ${d.id}">
+                    <div class="dim-info">
+                        <div class="dim-label-full">${d.id} - ${d.name}</div>
+                        <div class="dim-state" data-state="${d.id}">---</div>
+                    </div>
+                    <div class="dim-bar">
+                        <div class="bar-fill ${d.id}" data-bar="${d.id}" style="width: 0%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateHUD(state) {
+            DIMS.forEach((d, i) => {
+                const pos = state[i];
+                
+                // Update compact dots
+                document.querySelectorAll(`[data-dim="${d.id}"]`).forEach((dot, idx) => {
+                    dot.classList.toggle('active', idx === pos);
+                });
+                
+                // Update expanded state
+                document.querySelector(`[data-state="${d.id}"]`).textContent = d.states[pos];
+                
+                // Update bar
+                const bar = document.querySelector(`[data-bar="${d.id}"]`);
+                bar.style.width = ((pos / 6) * 100) + '%';
+            });
+        }
+
+        function getStateAtTime(t) {
+            for (let i = SEQUENCE.length - 1; i >= 0; i--) {
+                if (t >= SEQUENCE[i].t) return SEQUENCE[i];
+            }
+            return SEQUENCE[0];
+        }
+
+        function animate() {
+            if (!playing) return;
+            
+            const elapsed = (Date.now() - startTime) / 1000;
+            const t = elapsed % 10;
+            
+            const current = getStateAtTime(t);
+            currentFrame = SEQUENCE.findIndex(s => s === current);
+            updateDisplay(current, t);
+            
+            animFrame = requestAnimationFrame(animate);
+        }
+
+        function updateDisplay(current, t) {
+            updateHUD(current.state);
+            document.getElementById('sceneText').textContent = current.scene;
+            document.getElementById('timer').textContent = `FRAME ${currentFrame + 1}/${SEQUENCE.length} | ${t.toFixed(1)}s`;
+        }
+
+        function nextFrame() {
+            if (playing) togglePlay();
+            currentFrame = (currentFrame + 1) % SEQUENCE.length;
+            const current = SEQUENCE[currentFrame];
+            updateDisplay(current, current.t);
+        }
+
+        function prevFrame() {
+            if (playing) togglePlay();
+            currentFrame = (currentFrame - 1 + SEQUENCE.length) % SEQUENCE.length;
+            const current = SEQUENCE[currentFrame];
+            updateDisplay(current, current.t);
+        }
+
+        function togglePlay() {
+            playing = !playing;
+            const btn = document.getElementById('playBtn');
+            
+            if (playing) {
+                btn.textContent = '⏸ STOP';
+                startTime = Date.now() - (SEQUENCE[currentFrame].t * 1000);
+                animate();
+            } else {
+                btn.textContent = '▶ PLAY';
+                if (animFrame) cancelAnimationFrame(animFrame);
+            }
+        }
+
+        initHUD();
+        updateDisplay(SEQUENCE[0], 0);
+    </script>
+</body>
+</html>
