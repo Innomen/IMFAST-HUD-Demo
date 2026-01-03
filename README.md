@@ -11,6 +11,8 @@ This is a proof-of-concept HUD (heads-up display) showing how consciousness coul
 
 https://philpapers.org/rec/SERGTW
 
+<img width="1023" height="519" alt="Screenshot_20260103_093148" src="https://github.com/user-attachments/assets/260e388f-f3a5-413f-93b8-f80a405068af" />
+
 The demo shows both compact and expanded HUD formats displaying how experiential coordinates shift during a simple 10-second walking scenario. Each "frame" represents a complete snapshot of consciousness at that moment.
 
 ## The IMFAST System
