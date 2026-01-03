@@ -9,6 +9,8 @@ https://innomen.github.io/IMFAST-HUD-Demo/IMFAST_HUD_Demo.html
 
 This is a proof-of-concept HUD (heads-up display) showing how consciousness could be formally tracked using the six-dimensional IMFAST coordinate system proposed in **Game Theory 2.0: Experiential Patterns as Playable Formalisms**.
 
+https://philpapers.org/rec/SERGTW
+
 The demo shows both compact and expanded HUD formats displaying how experiential coordinates shift during a simple 10-second walking scenario. Each "frame" represents a complete snapshot of consciousness at that moment.
 
 ## The IMFAST System
